@@ -1,23 +1,32 @@
-import logo from './logo.svg';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import OtpVerify from './components/OtpVerify';
+import OnboardingForm from './components/OnboardingForm';
 import './App.css';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="position-relative min-vh-100" style={{ backgroundColor: '#d4fcdc' }}>
+      {/* ✅ Logo fixed in top-right */}
+      <img
+        src="/mnivesh-logo.png"
+        alt="mNivesh Logo"
+        className="position-absolute"
+        style={{
+          top: '1px',
+          right: '10px',
+          width: '160px',
+          height: 'auto',
+          zIndex: 999
+        }}
+      />
+
+      <Router>
+        <Routes>
+          <Route path="/" element={<OtpVerify />} />
+          <Route path="/onboarding" element={<OnboardingForm />} />
+        </Routes>
+      </Router>
     </div>
   );
 }
