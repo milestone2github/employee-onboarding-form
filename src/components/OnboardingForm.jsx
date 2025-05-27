@@ -4,8 +4,8 @@ import PersonalDetails from './steps/PersonalDetails';
 import ReferenceDetails from './steps/ReferenceDetails';
 import BankDetails from './steps/BankDetails';
 import EducationDetails from './steps/EducationDetails';
-
-const API = 'http://localhost:5000/api/onboarding';
+import { useNavigate } from 'react-router-dom';
+const API = 'http://localhost:5001/api/onboarding';
 
 const OnboardingForm = () => {
   const [step, setStep] = useState(0);
@@ -16,14 +16,16 @@ const OnboardingForm = () => {
     bankDetails: {},
     educationalCertificatesAndDegree: {},
   });
-
+  const navigate = useNavigate();
   const token = localStorage.getItem('token');
 
   useEffect(() => {
+
     if (token) {
       axios
         .get(`${API}/me`, {
           headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true
         })
         .then((res) => {
           const saved = res.data || {};
@@ -43,7 +45,7 @@ const OnboardingForm = () => {
       await axios.patch(
         `${API}/onboarding-form`,
         { [sectionKey]: formData[sectionKey] },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` }, withCredentials: true }
       );
     } catch (err) {
       console.error(`Failed to save ${sectionKey}`, err);
@@ -123,64 +125,64 @@ const OnboardingForm = () => {
   };
 
   return (
-  <div className="min-vh-100" style={{ backgroundColor: '#d4fcdc' }}>
-    <div className="container py-5">
-      <div className="p-4 shadow bg-white rounded" style={{ maxWidth: '900px', margin: 'auto' }}>
-        <h2 className="mb-4">Employee Onboarding</h2>
+    <div className="min-vh-100" style={{ backgroundColor: '#d4fcdc' }}>
+      <div className="container py-5">
+        <div className="p-4 shadow bg-white rounded" style={{ maxWidth: '900px', margin: 'auto' }}>
+          <h2 className="mb-4">Employee Onboarding</h2>
 
-        {submitted ? (
-          <div className="text-center my-5">
-            <h3 className="text-success">✅ Thank you for submitting the form!</h3>
-            <p>Your onboarding details have been saved. Our team will contact you shortly.</p>
-          </div>
-        ) : (
-          <>
-            {/* Stepper */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              {steps.map((label, index) => (
-                <div key={index} className="flex-fill text-center">
-                  <div
-                    className={`progress-step fw-bold ${index === step ? 'active' : ''}`}
-                    style={{
-                      borderBottom: index === step ? '3px solid #1abc9c' : '3px solid #ccc',
-                      color: index === step ? '#1abc9c' : '#555',
-                      paddingBottom: '6px',
-                    }}
-                  >
-                    {label}
+          {submitted ? (
+            <div className="text-center my-5">
+              <h3 className="text-success">✅ Thank you for submitting the form!</h3>
+              <p>Your onboarding details have been saved. Our team will contact you shortly.</p>
+            </div>
+          ) : (
+            <>
+              {/* Stepper */}
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                {steps.map((label, index) => (
+                  <div key={index} className="flex-fill text-center">
+                    <div
+                      className={`progress-step fw-bold ${index === step ? 'active' : ''}`}
+                      style={{
+                        borderBottom: index === step ? '3px solid #1abc9c' : '3px solid #ccc',
+                        color: index === step ? '#1abc9c' : '#555',
+                        paddingBottom: '6px',
+                      }}
+                    >
+                      {label}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            {renderStep()}
+              {renderStep()}
 
-            <div className="d-flex justify-content-between mt-4">
-              {step > 0 && (
-                <button className="btn btn-outline-secondary" onClick={handlePrev}>
-                  ← Back
-                </button>
-              )}
-              {step < steps.length - 1 && (
-                <button className="btn btn-primary ms-auto" onClick={handleNext}>
-                  Next →
-                </button>
-              )}
-              {step === steps.length - 1 && (
-                <button
-                  className="btn btn-success ms-auto"
-                  onClick={() => setSubmitted(true)}
-                >
-                  Submit
-                </button>
-              )}
-            </div>
-          </>
-        )}
+              <div className="d-flex justify-content-between mt-4">
+                {step > 0 && (
+                  <button className="btn btn-outline-secondary" onClick={handlePrev}>
+                    ← Back
+                  </button>
+                )}
+                {step < steps.length - 1 && (
+                  <button className="btn btn-primary ms-auto" onClick={handleNext}>
+                    Next →
+                  </button>
+                )}
+                {step === steps.length - 1 && (
+                  <button
+                    className="btn btn-success ms-auto"
+                    onClick={() => setSubmitted(true)}
+                  >
+                    Submit
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 
 };
 
