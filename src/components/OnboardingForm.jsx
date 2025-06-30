@@ -5,10 +5,13 @@ import ReferenceDetails from './steps/ReferenceDetails';
 import BankDetails from './steps/BankDetails';
 import EducationDetails from './steps/EducationDetails';
 import { useNavigate } from 'react-router-dom';
-const API = 'http://localhost:5001/api/onboarding';
+import { toast } from 'react-toastify';
+const API = `${process.env.REACT_APP_API_URL}/api/onboarding`;
+
 
 const OnboardingForm = () => {
   const [step, setStep] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     personalDetails: {},
@@ -40,48 +43,131 @@ const OnboardingForm = () => {
     }
   }, [token]);
 
-  const saveStepToBackend = async (sectionKey) => {
-    try {
-      await axios.patch(
-        `${API}/onboarding-form`,
-        { [sectionKey]: formData[sectionKey] },
-        { headers: { Authorization: `Bearer ${token}` }, withCredentials: true }
-      );
-    } catch (err) {
-      console.error(`Failed to save ${sectionKey}`, err);
+const saveStepToBackend = async (sectionKey) => {
+  try {
+    const data = formData[sectionKey];
+
+    // === [STEPS WITH FILE UPLOADS] ===
+    if (
+      sectionKey === 'educationalCertificatesAndDegree' ||
+      sectionKey === 'personalDetails' ||
+      sectionKey === 'bankDetails'
+    ) {
+      const formDataToSend = new FormData();
+
+      // Append text fields
+      for (const key in data) {
+        const value = data[key];
+        if (!(value instanceof File)) {
+          formDataToSend.append(`${sectionKey}.${key}`, value || '');
+        }
+      }
+
+      // Append files
+      if (sectionKey === 'educationalCertificatesAndDegree') {
+        if (data.tenthMarksheetFile)
+          formDataToSend.append('tenthMarksheetFile', data.tenthMarksheetFile);
+        if (data.lastEducationFileUpload)
+          formDataToSend.append('lastEducationFileUpload', data.lastEducationFileUpload);
+        if (data.latestUpdateCvUpload)
+          formDataToSend.append('latestUpdateCvUpload', data.latestUpdateCvUpload);
+      }
+
+      if (sectionKey === 'personalDetails' && data.photo)
+        formDataToSend.append('personalDetails.photo', data.photo);
+
+      if (sectionKey === 'bankDetails' && data.bankVerificationDoc)
+        formDataToSend.append('bankDetails.bankVerificationDoc', data.bankVerificationDoc);
+
+      // Append final submit only in the last step
+      if (step === steps.length - 1) {
+        formDataToSend.append('finalSubmit', 'true');
+      }
+
+      await axios.patch(`${API}/onboarding-form`, formDataToSend, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+        withCredentials: true,
+      });
+
+    } else {
+      // === [OTHER STEPS: JSON PATCH] ===
+      const payload = { [sectionKey]: data };
+
+      await axios.patch(`${API}/onboarding-form`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      });
     }
+  } catch (err) {
+    console.error(`❌ Failed to save ${sectionKey}`, err);
+  }
+};
+
+
+ const validateStep = () => {
+  const sectionKey = Object.keys(formData)[step];
+  const data = formData[sectionKey] || {};
+
+  const requiredFields = {
+    personalDetails: [
+      'firstName', 'lastName', 'email', 'phone', 'panNumber', 'postalZipCode',
+      'fatherName', 'motherName', 'dob', 'gender', 'maritalStatus',
+      'streetAddress', 'addressLine2', 'city', 'stateRegionProvince', 'photo'
+    ],
+    referenceDetails: [
+      'reference1Name', 'reference1Phone', 'relationshipWithReference1',
+      'emergencyContactName', 'emergencyContactPhone', 'relationshipWithEmergencyContact'
+    ],
+    bankDetails: [
+      'beneficiaryName', 'accountNumber', 'ifscCode', 'bankName', 'bankVerificationDoc'
+    ],
+    educationalCertificatesAndDegree: [
+      'tenthMarksheet', 'latestUpdateCv'
+    ]
   };
 
-  const validateStep = () => {
-    const sectionKey = Object.keys(formData)[step];
-    const data = formData[sectionKey] || {};
+  for (const field of requiredFields[sectionKey] || []) {
+    const value = data[field];
 
-    const requiredFields = {
-      personalDetails: ['firstName', 'lastName', 'email', 'phone', 'panNumber', 'postalZipCode'],
-      referenceDetails: ['reference1Name', 'reference1Phone'],
-      bankDetails: ['beneficiaryName', 'accountNumber', 'ifscCode'],
-      educationalCertificatesAndDegree: ['tenthMarksheet', 'latestUpdateCv'],
-    };
+    const isMissing = !value || (typeof value === 'string' && value.trim() === '');
 
-    for (const field of requiredFields[sectionKey] || []) {
-      const value = data[field];
-      if (!value || (typeof value === 'string' && value.trim() === '')) {
-        alert(`Please fill out: ${field.replace(/([A-Z])/g, ' $1')}`);
+    if (isMissing) {
+      // Special case for educational file fallback fields
+      if (sectionKey === 'educationalCertificatesAndDegree') {
+        const fallbackFile =
+          data[`${field}File`] || data[`${field}Upload`];
+        if (!fallbackFile) {
+          toast.error(`Please upload: ${field.replace(/([A-Z])/g, ' $1')}`);
+          return false;
+        }
+      } else {
+        toast.error(`Please fill out: ${field.replace(/([A-Z])/g, ' $1')}`);
         return false;
       }
     }
+  }
 
-    return true;
-  };
+  return true;
+};
 
   const steps = ['Personal Details', 'Reference Details', 'Bank Details', 'Educational Certificates & Degree'];
 
   const handleNext = async () => {
-    if (!validateStep()) return;
-    const sectionKey = Object.keys(formData)[step];
+  if (!validateStep()) return;
+  const sectionKey = Object.keys(formData)[step];
+
+  try {
+    setLoading(true); // ⏳ Show spinner
     await saveStepToBackend(sectionKey);
     setStep((prev) => prev + 1);
-  };
+  } finally {
+    setLoading(false); // ✅ Hide spinner
+  }
+};
+
 
   const handlePrev = () => setStep((prev) => prev - 1);
 
@@ -155,6 +241,15 @@ const OnboardingForm = () => {
                 ))}
               </div>
 
+{loading && (
+  <div className="text-center mb-3">
+    <div className="spinner-border text-primary" role="status">
+      <span className="visually-hidden">Loading...</span>
+    </div>
+    <div className="text-muted mt-2">Uploading files. Please wait...</div>
+  </div>
+)}
+
               {renderStep()}
 
               <div className="d-flex justify-content-between mt-4">
@@ -169,13 +264,25 @@ const OnboardingForm = () => {
                   </button>
                 )}
                 {step === steps.length - 1 && (
-                  <button
-                    className="btn btn-success ms-auto"
-                    onClick={() => setSubmitted(true)}
-                  >
-                    Submit
-                  </button>
-                )}
+  <button
+  className="btn btn-success ms-auto"
+  onClick={async () => {
+    if (!validateStep()) return;
+    try {
+      setLoading(true);
+      await saveStepToBackend("educationalCertificatesAndDegree");
+      setSubmitted(true);
+    } finally {
+      setLoading(false);
+    }
+  }}
+  disabled={loading}
+>
+  {loading ? 'Submitting...' : 'Submit'}
+</button>
+
+)}
+
               </div>
             </>
           )}

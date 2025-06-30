@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const API = 'http://localhost:5001/api/onboarding/otp';
+const API = `${process.env.REACT_APP_API_URL}/api/onboarding/otp`;
 
 const OtpVerify = () => {
   const [contact, setContact] = useState('');

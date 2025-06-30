@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import axios from 'axios';
 
-const API = 'http://localhost:5001/api/onboarding';
+const API = `${process.env.REACT_APP_API_URL}/api/onboarding`;
 
 const ProtectedRoute = ({ children }) => {
   const [authorized, setAuthorized] = useState(null)
