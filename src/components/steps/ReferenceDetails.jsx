@@ -1,7 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
+
 
 const ReferenceDetails = ({ data = {}, onChange }) => {
   const handleInput = (e) => onChange({ ...data, [e.target.name]: e.target.value });
+
+  const [emergencyPhoneError, setEmergencyPhoneError] = useState('');
+
+  const handleBlur = (e) => {
+  const { name, value } = e.target;
+
+  if (name === 'emergencyContactPhone') {
+    if (!/^\d{10}$/.test(value)) {
+      setEmergencyPhoneError('Phone number must be exactly 10 digits.');
+    } else {
+      setEmergencyPhoneError('');
+    }
+  }
+};
+
 
 
   return (
@@ -84,11 +100,15 @@ const ReferenceDetails = ({ data = {}, onChange }) => {
         <div className="mb-3 col-md-6">
           <label className="form-label">Emergency Contact Phone</label>
           <input
-            className="form-control"
-            name="emergencyContactPhone"
-            value={data.emergencyContactPhone || ''}
-            onChange={handleInput}
-          />
+  className={`form-control ${emergencyPhoneError ? 'is-invalid' : ''}`}
+  name="emergencyContactPhone"
+  value={data.emergencyContactPhone || ''}
+  onChange={handleInput}
+  onBlur={handleBlur}
+  type="text"
+  inputMode="numeric"
+/>
+{emergencyPhoneError && <div className="invalid-feedback">{emergencyPhoneError}</div>}
         </div>
         <div className="mb-3 col-12">
           <label className="form-label">Relationship with Emergency Contact</label>

@@ -6,6 +6,8 @@ import Webcam from 'react-webcam';
 const BankDetails = ({ data = {}, onChange }) => {
   const handleInput = (e) => onChange({ ...data, [e.target.name]: e.target.value });
 const [ifscError, setIfscError] = useState('');
+const [accountError, setAccountError] = useState('');
+
 
   const handleBlur = (e) => {
   const { name, value } = e.target;
@@ -19,7 +21,16 @@ const [ifscError, setIfscError] = useState('');
       onChange({ ...data, [name]: upper });
     }
   }
+
+  if (name === 'accountNumber') {
+    if (!/^\d{6,}$/.test(value)) {
+      setAccountError('Account number must be at least 6 digits.');
+    } else {
+      setAccountError('');
+    }
+  }
 };
+
 
 
   const [showCamera, setShowCamera] = useState(false);
@@ -47,7 +58,17 @@ const [ifscError, setIfscError] = useState('');
         </div>
         <div className="mb-3 col-md-6">
           <label className="form-label">Account Number</label>
-          <input className="form-control" name="accountNumber" value={data.accountNumber || ''} onChange={handleInput} type="text" inputMode="numeric" />
+         <input
+  className={`form-control ${accountError ? 'is-invalid' : ''}`}
+  name="accountNumber"
+  value={data.accountNumber || ''}
+  onChange={handleInput}
+  onBlur={handleBlur}
+  type="text"
+  inputMode="numeric"
+/>
+{accountError && <div className="invalid-feedback">{accountError}</div>}
+
         </div>
       </div>
 

@@ -20,8 +20,8 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<OtpVerify />} />
-          {/* <Route path="/onboarding" element={<ProtectedRoute><OnboardingForm /></ProtectedRoute>} /> */}
-          <Route path="/onboarding" element={<OnboardingForm />} />
+          <Route path="/onboarding" element={<ProtectedRoute><OnboardingForm /></ProtectedRoute>} />
+          
         </Routes>
       </Router>
 
