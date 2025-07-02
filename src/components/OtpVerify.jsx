@@ -13,17 +13,18 @@ const OtpVerify = () => {
   const navigate = useNavigate();
 
   const sendOTP = async () => {
-    try {
-      const payload = { phone: contact };
-      await axios.post(`${API}/send`, payload);
-      setOtpSent(true);
-      setMessage('✅ OTP sent successfully ✅');
-      setMessageType('success');
-    } catch (error) {
-      setMessage(error.response?.data?.error || '❌ Failed to send OTP ❌');
-      setMessageType('error');
-    }
-  };
+  try {
+    const payload = { phone: contact };
+    await axios.post(`${API}/send`, payload);
+    setOtpSent(true);
+    setMessage('✅ OTP sent successfully ✅');
+    setMessageType('success');
+  } catch (error) {
+    setMessage(error.response?.data?.error || '❌ Failed to send OTP ❌');
+    setMessageType('error');
+  }
+};
+
 
   const verifyOTP = async (e) => {
     e.preventDefault();
@@ -44,6 +45,9 @@ const OtpVerify = () => {
     }
   };
 
+  const isPhoneValid = /^\d{10}$/.test(contact);
+
+
 
   return (
     <div className="min-vh-100 d-flex justify-content-center align-items-center" style={{ backgroundColor: '#d4fcdc' }}>
@@ -52,20 +56,28 @@ const OtpVerify = () => {
         <form onSubmit={verifyOTP}>
 
           <div className="mb-3">
-            <label className="form-label">Phone</label>
-            <input
-              type="text"
-              className="form-control"
-              value={contact}
-              onChange={(e) => setContact(e.target.value)}
-              placeholder="e.g. 9876543210"
-              required
-            />
-          </div>
+  <label className="form-label">Phone</label>
+  <input
+    type="text"
+    className="form-control"
+    value={contact}
+    onChange={(e) => setContact(e.target.value)}
+    placeholder="e.g. 9876543210"
+    required
+    disabled={otpSent}  // 👈 This disables the input after OTP is sent
+  />
+</div>
+
           {!otpSent ? (
-            <button type="button" className="btn btn-primary w-100" onClick={sendOTP}>
-              📤 Send OTP
-            </button>
+            <button
+  type="button"
+  className="btn btn-primary w-100"
+  onClick={sendOTP}
+  disabled={!isPhoneValid}
+>
+  📤 Send OTP
+</button>
+
           ) : (
             <>
               <div className="mb-3">
