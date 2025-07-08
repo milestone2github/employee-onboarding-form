@@ -151,14 +151,15 @@ const PersonalDetails = ({ data = {}, onChange }) => {
             Use Camera
           </button>
 
-          {data.photo instanceof File && (
+          {data.photo && (
   <img
-    src={URL.createObjectURL(data.photo)}
+    src={data.photo instanceof File ? URL.createObjectURL(data.photo) : data.photo}
     alt="Preview"
     className="img-thumbnail mt-2"
     style={{ maxWidth: '200px' }}
   />
 )}
+
 
         </div>
       </div>

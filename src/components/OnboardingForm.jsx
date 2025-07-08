@@ -13,6 +13,7 @@ const OnboardingForm = () => {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const [formData, setFormData] = useState({
     personalDetails: {},
     referenceDetails: {},
@@ -23,25 +24,31 @@ const OnboardingForm = () => {
   const token = localStorage.getItem('token');
 
   useEffect(() => {
+  if (token) {
+    axios
+      .get(`${API}/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true
+      })
+      .then((res) => {
+        const saved = res.data || {};
+        setFormData({
+          personalDetails: saved.personalDetails || {},
+          referenceDetails: saved.referenceDetails || {},
+          bankDetails: saved.bankDetails || {},
+          educationalCertificatesAndDegree: saved.educationalCertificatesAndDegree || {},
+        });
 
-    if (token) {
-      axios
-        .get(`${API}/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true
-        })
-        .then((res) => {
-          const saved = res.data || {};
-          setFormData({
-            personalDetails: saved.personalDetails || {},
-            referenceDetails: saved.referenceDetails || {},
-            bankDetails: saved.bankDetails || {},
-            educationalCertificatesAndDegree: saved.educationalCertificatesAndDegree || {},
-          });
-        })
-        .catch((err) => console.error('Failed to load onboarding data', err));
-    }
-  }, [token]);
+        //  Check if already submitted
+        if (saved.submittedAt) {
+          setSubmitted(true);
+          setAlreadySubmitted(true); 
+        }
+      })
+      .catch((err) => console.error('Failed to load onboarding data', err));
+  }
+}, [token]);
+
 
 const saveStepToBackend = async (sectionKey) => {
   try {
@@ -217,11 +224,20 @@ const saveStepToBackend = async (sectionKey) => {
           <h2 className="mb-4">Employee Onboarding</h2>
 
           {submitted ? (
-            <div className="text-center my-5">
-              <h3 className="text-success">✅ Thank you for submitting the form!</h3>
-              <p>Your onboarding details have been saved. Our team will contact you shortly.</p>
-            </div>
-          ) : (
+  <div className="text-center my-5">
+    {alreadySubmitted ? (
+      <>
+        <h3 className="text-success">✅ You have already submitted the form</h3>
+        <p>Thanks! We have received your onboarding details.</p>
+      </>
+    ) : (
+      <>
+        <h3 className="text-success">✅ Thank you for submitting the form!</h3>
+        <p>Your onboarding details have been saved. Our team will contact you shortly.</p>
+      </>
+    )}
+  </div>
+) : (
             <>
               {/* Stepper */}
               <div className="d-flex justify-content-between align-items-center mb-4">
