@@ -10,9 +10,13 @@ const OtpVerify = () => {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState(''); // 'success' | 'error'
   const [otpSent, setOtpSent] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const navigate = useNavigate();
 
   const sendOTP = async () => {
+  setOtpLoading(true); 
+  setMessage('');
   try {
     const payload = { phone: contact };
     await axios.post(`${API}/send`, payload);
@@ -22,28 +26,37 @@ const OtpVerify = () => {
   } catch (error) {
     setMessage(error.response?.data?.error || '❌ Failed to send OTP ❌');
     setMessageType('error');
+  } finally {
+    setOtpLoading(false); 
   }
 };
 
 
+
   const verifyOTP = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = contact.includes('@') ? { email: contact, otp } : { phone: contact, otp };
-      const response = await axios.post(`${API}/verify`, payload, { withCredentials: true, });
-      localStorage.setItem('token', response.data.data.token);
-      
-      if (!response.data.data.otpVerified) {
-        alert("OTP not verified. Redirecting to verification page")
-        // navigate('/')
-        return;
-      }
-      navigate('/onboarding');
-    } catch (error) {
-      setMessage(error.response?.data?.error || ' ❌ OTP verification failed ❌');
-      setMessageType('error');
+  e.preventDefault();
+  setVerifying(true); 
+  setMessage('');
+
+  try {
+    const payload = contact.includes('@') ? { email: contact, otp } : { phone: contact, otp };
+    const response = await axios.post(`${API}/verify`, payload, { withCredentials: true });
+    localStorage.setItem('token', response.data.data.token);
+
+    if (!response.data.data.otpVerified) {
+      alert("OTP not verified. Redirecting to verification page");
+      return;
     }
-  };
+
+    navigate('/onboarding');
+  } catch (error) {
+    setMessage(error.response?.data?.error || ' ❌ OTP verification failed ❌');
+    setMessageType('error');
+  } finally {
+    setVerifying(false); 
+  }
+};
+
 
   const isPhoneValid = /^\d{10}$/.test(contact);
 
@@ -71,12 +84,20 @@ const OtpVerify = () => {
           {!otpSent ? (
             <button
   type="button"
-  className="btn btn-primary w-100"
+  className="btn btn-primary w-100 d-flex justify-content-center align-items-center"
   onClick={sendOTP}
-  disabled={!isPhoneValid}
+  disabled={!isPhoneValid || otpLoading}
 >
-  📤 Send OTP
+  {otpLoading ? (
+    <>
+      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      Sending OTP...
+    </>
+  ) : (
+    '📤 Send OTP'
+  )}
 </button>
+
 
           ) : (
             <>
