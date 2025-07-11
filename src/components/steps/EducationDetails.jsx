@@ -7,11 +7,6 @@ const ALLOWED_TYPES = [
 ];
 
 const EducationDetails = ({ data = {}, onChange }) => {
-  const handleInput = (e) => {
-    const { name, value } = e.target;
-    onChange({ ...data, [name]: value }); // Just save the Drive/public link
-  };
-
   const handleFileUpload = (e) => {
     const { name, files } = e.target;
     const file = files[0];

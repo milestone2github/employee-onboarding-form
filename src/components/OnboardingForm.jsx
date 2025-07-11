@@ -4,7 +4,6 @@ import PersonalDetails from './steps/PersonalDetails';
 import ReferenceDetails from './steps/ReferenceDetails';
 import BankDetails from './steps/BankDetails';
 import EducationDetails from './steps/EducationDetails';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 const API = `${process.env.REACT_APP_API_URL}/api/onboarding`;
 
@@ -20,7 +19,6 @@ const OnboardingForm = () => {
     bankDetails: {},
     educationalCertificatesAndDegree: {},
   });
-  const navigate = useNavigate();
   const token = localStorage.getItem('token');
 
   useEffect(() => {
