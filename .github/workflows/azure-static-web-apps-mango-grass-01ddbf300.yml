@@ -38,6 +38,12 @@ jobs:
                const coredemo = require('@actions/core')
                return await coredemo.getIDToken()
            result-encoding: string
+      - name: Inject Environment Variables  # ✅ Injects environment variables before build
+        env:
+          REACT_APP_API_URL: ${{ vars.REACT_APP_API_URL }}
+        run: |
+          echo "REACT_APP_API_URL=${REACT_APP_API_URL}" >> $GITHUB_ENV
+
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
