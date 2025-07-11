@@ -66,7 +66,15 @@ const OtpVerify = () => {
     <div className="min-vh-100 d-flex justify-content-center align-items-center" style={{ backgroundColor: '#d4fcdc' }}>
       <div className="card p-4 shadow-sm" style={{ width: '100%', maxWidth: '500px' }}>
         <h3 className="mb-4 text-center">🔐 Employee Onboarding Access</h3>
-        <form onSubmit={verifyOTP}>
+        <form onSubmit={(e) => {
+  e.preventDefault();
+  if (!otpSent) {
+    sendOTP();
+  } else {
+    verifyOTP(e);
+  }
+}}>
+
 
           <div className="mb-3">
   <label className="form-label">Phone</label>
@@ -81,42 +89,51 @@ const OtpVerify = () => {
   />
 </div>
 
-          {!otpSent ? (
-            <button
-  type="button"
-  className="btn btn-primary w-100 d-flex justify-content-center align-items-center"
-  onClick={sendOTP}
-  disabled={!isPhoneValid || otpLoading}
->
-  {otpLoading ? (
-    <>
-      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-      Sending OTP...
-    </>
-  ) : (
-    '📤 Send OTP'
-  )}
-</button>
+         {!otpSent ? (
+  <button
+    type="submit"
+    className="btn btn-primary w-100 d-flex justify-content-center align-items-center"
+    disabled={!isPhoneValid || otpLoading}
+  >
+    {otpLoading ? (
+      <>
+        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        Sending OTP...
+      </>
+    ) : (
+      '📤 Send OTP'
+    )}
+  </button>
+) : (
+  <>
+    <div className="mb-3">
+      <label className="form-label mt-3">Enter OTP</label>
+      <input
+        type="text"
+        className="form-control"
+        value={otp}
+        onChange={(e) => setOtp(e.target.value)}
+        placeholder="Enter the 4-digit OTP"
+        required
+      />
+    </div>
+    <button
+      type="submit"
+      className="btn btn-success w-100 mt-2 d-flex justify-content-center align-items-center"
+      disabled={verifying}
+    >
+      {verifying ? (
+        <>
+          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          Verifying...
+        </>
+      ) : (
+        'Verify & Proceed'
+      )}
+    </button>
+  </>
+)}
 
-
-          ) : (
-            <>
-              <div className="mb-3">
-                <label className="form-label mt-3">Enter OTP</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="Enter the 4-digit OTP"
-                  required
-                />
-              </div>
-              <button type="submit" className="btn btn-success w-100 mt-2">
-                Verify & Proceed
-              </button>
-            </>
-          )}
 
           {message && (
             <div
