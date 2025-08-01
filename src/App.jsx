@@ -1,4 +1,3 @@
-// src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import OtpVerify from './components/OtpVerify';
@@ -6,6 +5,12 @@ import OnboardingForm from './components/OnboardingForm';
 import ProtectedRoute from './components/ProtectedRoute';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+// 🔽 Import redirect pages
+import SignSuccess from './components/zohoRedirects/SignSuccess';
+import SignCompleted from './components/zohoRedirects/SignCompleted';
+import SignDeclined from './components/zohoRedirects/SignDeclined';
+import SignLater from './components/zohoRedirects/SignLater';
 
 function App() {
   return (
@@ -22,10 +27,14 @@ function App() {
           <Route path="/" element={<OtpVerify />} />
           <Route path="/onboarding" element={<ProtectedRoute><OnboardingForm /></ProtectedRoute>} />
           
+          {/* 🔽 Zoho redirect routes */}
+          <Route path="/sign-success" element={<SignSuccess />} />
+          <Route path="/sign-completed" element={<SignCompleted />} />
+          <Route path="/sign-declined" element={<SignDeclined />} />
+          <Route path="/sign-later" element={<SignLater />} />
         </Routes>
       </Router>
 
-      {/* ✅ Toasts visible globally */}
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
     </div>
   );

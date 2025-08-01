@@ -20,6 +20,9 @@ const OnboardingForm = () => {
     educationalCertificatesAndDegree: {},
   });
   const token = localStorage.getItem('token');
+  const [iframeUrl, setIframeUrl] = useState(null);
+  const [signedComplete, setSignedComplete] = useState(false);
+
 
   useEffect(() => {
   if (token) {
@@ -221,21 +224,21 @@ const saveStepToBackend = async (sectionKey) => {
         <div className="p-4 shadow bg-white rounded" style={{ maxWidth: '900px', margin: 'auto' }}>
           <h2 className="mb-4">Employee Onboarding</h2>
 
-          {submitted ? (
-  <div className="text-center my-5">
-    {alreadySubmitted ? (
-      <>
-        <h3 className="text-success">✅ You have already submitted the form</h3>
-        <p>Thanks! We have received your onboarding details.</p>
-      </>
-    ) : (
-      <>
-        <h3 className="text-success">✅ Thank you for submitting the form!</h3>
-        <p>Your onboarding details have been saved. Our team will contact you shortly.</p>
-      </>
-    )}
-  </div>
-) : (
+                  {submitted ? (
+          <div className="text-center my-5">
+            {alreadySubmitted ? (
+              <>
+                <h3 className="text-success">✅ You have already submitted the form</h3>
+                <p>Thanks! We have received your onboarding details.</p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-success">✅ Thank you for submitting the form!</h3>
+                <p>Your onboarding details have been saved. Our team will contact you shortly.</p>
+              </>
+            )}
+          </div>
+        ) : (
             <>
               {/* Stepper */}
               <div className="d-flex justify-content-between align-items-center mb-4">
@@ -255,17 +258,29 @@ const saveStepToBackend = async (sectionKey) => {
                 ))}
               </div>
 
-{loading && (
-  <div className="text-center mb-3">
-    <div className="spinner-border text-primary" role="status">
-      <span className="visually-hidden">Loading...</span>
-    </div>
-    <div className="text-muted mt-2">Uploading files. Please wait...</div>
-  </div>
-)}
+            {loading && (
+              <div className="text-center mb-3">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+                <div className="text-muted mt-2">Uploading files. Please wait...</div>
+              </div>
+            )}
 
               {renderStep()}
-
+              {iframeUrl && (
+            <div className="mt-4">
+              <h4>🔐 NDA Signing - Powered by Zoho Sign</h4>
+              <iframe
+                src={iframeUrl}
+                width="100%"
+                height="700px"
+                frameBorder="0"
+                title="NDA Signing"
+              ></iframe>
+            </div>
+          )}
+               {!iframeUrl && (
               <div className="d-flex justify-content-between mt-4">
                 {step > 0 && (
                   <button className="btn btn-outline-secondary" onClick={handlePrev}>
@@ -278,26 +293,41 @@ const saveStepToBackend = async (sectionKey) => {
                   </button>
                 )}
                 {step === steps.length - 1 && (
-  <button
-  className="btn btn-success ms-auto"
-  onClick={async () => {
-    if (!validateStep()) return;
-    try {
-      setLoading(true);
-      await saveStepToBackend("educationalCertificatesAndDegree");
-      setSubmitted(true);
-    } finally {
-      setLoading(false);
-    }
-  }}
-  disabled={loading}
->
-  {loading ? 'Submitting...' : 'Submit'}
-</button>
+                  <button
+                    className="btn btn-success ms-auto"
+                    onClick={async () => {
+                      if (!validateStep()) return;
+                      try {
+                        setLoading(true);
 
-)}
+                        await saveStepToBackend("educationalCertificatesAndDegree");
 
+                       const { data } = await axios.get("http://localhost:5000/api/onboarding/embeddedsigning", {
+                      headers: { Authorization: `Bearer ${token}` },
+                      withCredentials: true
+                    });
+
+                    console.log("🚀 Response from backend:", data);
+
+                        if (data?.signingURL) {
+                        setIframeUrl(data.signingURL); // ✅ matches backend key
+                      }else {
+                          toast.error("Failed to fetch signing URL");
+                        }
+                      } catch (err) {
+                        console.error("❌ Error during submit:", err);
+                        toast.error("Submission failed");
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                  >
+                    {loading ? "Submitting..." : "Submit & Sign NDA"}
+                  </button>
+                )}
               </div>
+            )}
             </>
           )}
         </div>
