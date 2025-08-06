@@ -23,6 +23,7 @@ const OnboardingForm = () => {
   const [iframeUrl, setIframeUrl] = useState(null);
   const [signedComplete, setSignedComplete] = useState(false);
 
+  const steps = ['Personal Details', 'Reference Details', 'Bank Details', 'Educational Certificates & Degree', 'NDA Signing'];
 
   useEffect(() => {
   if (token) {
@@ -33,6 +34,7 @@ const OnboardingForm = () => {
       })
       .then((res) => {
         const saved = res.data || {};
+        // console.log("saved data:", saved)
         setFormData({
           personalDetails: saved.personalDetails || {},
           referenceDetails: saved.referenceDetails || {},
@@ -88,7 +90,7 @@ const saveStepToBackend = async (sectionKey) => {
         formDataToSend.append('bankDetails.bankVerificationDoc', data.bankVerificationDoc);
 
       // Append final submit only in the last step
-      if (step === steps.length - 1) {
+      if (step === steps.length - 2) {
         formDataToSend.append('finalSubmit', 'true');
       }
 
@@ -161,7 +163,6 @@ const saveStepToBackend = async (sectionKey) => {
   return true;
 };
 
-  const steps = ['Personal Details', 'Reference Details', 'Bank Details', 'Educational Certificates & Degree'];
 
   const handleNext = async () => {
   if (!validateStep()) return;
@@ -177,11 +178,35 @@ const saveStepToBackend = async (sectionKey) => {
 };
 
 
-  const handlePrev = () => setStep((prev) => prev - 1);
+  // const handlePrev = () => setStep((prev) => prev - 1);
 
   const handleChange = (section, updatedData) => {
     setFormData((prev) => ({ ...prev, [section]: updatedData }));
   };
+
+   useEffect(() => {
+    const fetchNdaSigningURL = async () => {
+      if (step === 4 && !iframeUrl) {
+        try {
+          setLoading(true);
+          const { data } = await axios.get(`${API}/embeddedsigning`, {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true
+          });
+          if (data?.signingURL) {
+            setIframeUrl(data.signingURL);
+          } else {
+            toast.error("Failed to fetch NDA signing URL.");
+          }
+        } catch (err) {
+          console.error("Error fetching NDA URL", err);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchNdaSigningURL();
+  }, [step, token, iframeUrl]);
 
   const renderStep = () => {
     switch (step) {
@@ -212,6 +237,19 @@ const saveStepToBackend = async (sectionKey) => {
             data={formData.educationalCertificatesAndDegree}
             onChange={(data) => handleChange('educationalCertificatesAndDegree', data)}
           />
+        );
+      case 4: return (
+        <div className="mt-4">
+          <h4>🔐 NDA Signing - Powered by Zoho Sign</h4>
+          {iframeUrl ? (
+            <iframe src={iframeUrl} width="100%" height="700px" frameBorder="0" title="NDA Signing"></iframe>
+          ) : (
+            <div>Loading NDA document...</div>
+          )}
+          <div className="text-muted mt-3">
+            After completing the signing, you will be redirected automatically.
+          </div>
+        </div>
         );
       default:
         return null;
@@ -268,64 +306,37 @@ const saveStepToBackend = async (sectionKey) => {
             )}
 
               {renderStep()}
-              {iframeUrl && (
-            <div className="mt-4">
-              <h4>🔐 NDA Signing - Powered by Zoho Sign</h4>
-              <iframe
-                src={iframeUrl}
-                width="100%"
-                height="700px"
-                frameBorder="0"
-                title="NDA Signing"
-              ></iframe>
-            </div>
-          )}
-               {!iframeUrl && (
-              <div className="d-flex justify-content-between mt-4">
-                {step > 0 && (
-                  <button className="btn btn-outline-secondary" onClick={handlePrev}>
-                    ← Back
-                  </button>
-                )}
-                {step < steps.length - 1 && (
+              {step < steps.length - 2 && (
+                <div className="d-flex justify-content-between mt-4">
+                  {step > 0 && (
+                    <button className="btn btn-outline-secondary" onClick={() => setStep((prev) => prev - 1)}>
+                      ← Back
+                    </button>
+                  )}
                   <button className="btn btn-primary ms-auto" onClick={handleNext}>
                     Next →
                   </button>
-                )}
-                {step === steps.length - 1 && (
+                </div>
+              )}
+              {step === steps.length - 2 && (
+                <div className="d-flex justify-content-end mt-4">
                   <button
-                    className="btn btn-success ms-auto"
+                    className="btn btn-success"
                     onClick={async () => {
                       if (!validateStep()) return;
                       try {
                         setLoading(true);
-
                         await saveStepToBackend("educationalCertificatesAndDegree");
-
-                       const { data } = await axios.get("http://localhost:5000/api/onboarding/embeddedsigning", {
-                      headers: { Authorization: `Bearer ${token}` },
-                      withCredentials: true
-                    });
-
-                    console.log("🚀 Response from backend:", data);
-
-                        if (data?.signingURL) {
-                        setIframeUrl(data.signingURL); // ✅ matches backend key
-                      }else {
-                          toast.error("Failed to fetch signing URL");
-                        }
+                        setStep((prev) => prev + 1);
                       } catch (err) {
-                        console.error("❌ Error during submit:", err);
-                        toast.error("Submission failed");
+                        console.error('Submission failed', err);
                       } finally {
                         setLoading(false);
                       }
                     }}
-                    disabled={loading}
                   >
-                    {loading ? "Submitting..." : "Submit & Sign NDA"}
+                    Submit & Proceed to NDA →
                   </button>
-                )}
               </div>
             )}
             </>
