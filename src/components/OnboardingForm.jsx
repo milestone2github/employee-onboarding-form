@@ -34,6 +34,7 @@ const OnboardingForm = () => {
       })
       .then((res) => {
         const saved = res.data || {};
+        const savedNdaInfo = saved.nda
         // console.log("saved data:", saved)
         setFormData({
           personalDetails: saved.personalDetails || {},
@@ -42,11 +43,18 @@ const OnboardingForm = () => {
           educationalCertificatesAndDegree: saved.educationalCertificatesAndDegree || {},
         });
 
+        console.log("NDA Info:", savedNdaInfo );
+
         //  Check if already submitted
-        if (saved.submittedAt) {
+        if (savedNdaInfo.signed === true) {
           setSubmitted(true);
           setAlreadySubmitted(true); 
         }
+        
+        // if (saved.submittedAt) {
+        //   setSubmitted(true);
+        //   setAlreadySubmitted(true); 
+        // }
       })
       .catch((err) => console.error('Failed to load onboarding data', err));
   }
