@@ -21,7 +21,6 @@ const OnboardingForm = () => {
   });
   const token = localStorage.getItem('token');
   const [iframeUrl, setIframeUrl] = useState(null);
-  const [signedComplete, setSignedComplete] = useState(false);
 
   const steps = ['Personal Details', 'Reference Details', 'Bank Details', 'Educational Certificates & Degree', 'NDA Signing'];
 

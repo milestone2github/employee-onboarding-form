@@ -29,6 +29,7 @@ const userId = searchParams.get('userId');
     };
 
     updateStatus();
+    // eslint-disable-next-line
   }, [token]);
 
   //  if (localStorage.getItem('nda_completed') === 'true') {
