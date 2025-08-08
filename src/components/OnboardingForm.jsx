@@ -20,32 +20,60 @@ const OnboardingForm = () => {
     educationalCertificatesAndDegree: {},
   });
   const token = localStorage.getItem('token');
+  const [iframeUrl, setIframeUrl] = useState(null);
+  const [signedComplete, setSignedComplete] = useState(false);
 
-  useEffect(() => {
-  if (token) {
-    axios
-      .get(`${API}/me`, {
+  const steps = ['Personal Details', 'Reference Details', 'Bank Details', 'Educational Certificates & Degree', 'NDA Signing'];
+
+ useEffect(() => {
+  if (!token) return;
+
+  let cancelled = false;
+
+  const load = async () => {
+    try {
+      const { data } = await axios.get(`${API}/me`, {
         headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true
-      })
-      .then((res) => {
-        const saved = res.data || {};
-        setFormData({
-          personalDetails: saved.personalDetails || {},
-          referenceDetails: saved.referenceDetails || {},
-          bankDetails: saved.bankDetails || {},
-          educationalCertificatesAndDegree: saved.educationalCertificatesAndDegree || {},
-        });
+        withCredentials: true,
+      });
 
-        //  Check if already submitted
-        if (saved.submittedAt) {
-          setSubmitted(true);
-          setAlreadySubmitted(true); 
-        }
-      })
-      .catch((err) => console.error('Failed to load onboarding data', err));
-  }
+      if (cancelled) return;
+
+      const saved = data || {};
+      const savedNdaInfo = saved?.nda || {};
+
+      setFormData({
+        personalDetails: saved.personalDetails || {},
+        referenceDetails: saved.referenceDetails || {},
+        bankDetails: saved.bankDetails || {},
+        educationalCertificatesAndDegree: saved.educationalCertificatesAndDegree || {},
+      });
+
+      // first 4 steps complete?
+      if (saved?.submittedAt) {
+        setSubmitted(true);
+      }
+
+      // NDA fully complete? (same condition you used earlier)
+      if (savedNdaInfo?.signed === true) {
+        setAlreadySubmitted(true);
+      }
+
+      // auto-jump to NDA if pages 1–4 done but NDA not signed
+      if (saved?.submittedAt && !savedNdaInfo?.signed) {
+        setStep(4);
+      }
+
+      console.log('NDA Info:', savedNdaInfo);
+    } catch (err) {
+      console.error('Failed to load onboarding data', err);
+    }
+  };
+
+  load();
+  return () => { cancelled = true; };
 }, [token]);
+
 
 
 const saveStepToBackend = async (sectionKey) => {
@@ -85,7 +113,7 @@ const saveStepToBackend = async (sectionKey) => {
         formDataToSend.append('bankDetails.bankVerificationDoc', data.bankVerificationDoc);
 
       // Append final submit only in the last step
-      if (step === steps.length - 1) {
+      if (step === steps.length - 2) {
         formDataToSend.append('finalSubmit', 'true');
       }
 
@@ -158,7 +186,6 @@ const saveStepToBackend = async (sectionKey) => {
   return true;
 };
 
-  const steps = ['Personal Details', 'Reference Details', 'Bank Details', 'Educational Certificates & Degree'];
 
   const handleNext = async () => {
   if (!validateStep()) return;
@@ -174,11 +201,35 @@ const saveStepToBackend = async (sectionKey) => {
 };
 
 
-  const handlePrev = () => setStep((prev) => prev - 1);
+  // const handlePrev = () => setStep((prev) => prev - 1);
 
   const handleChange = (section, updatedData) => {
     setFormData((prev) => ({ ...prev, [section]: updatedData }));
   };
+
+   useEffect(() => {
+    const fetchNdaSigningURL = async () => {
+      if (step === 4 && !iframeUrl) {
+        try {
+          setLoading(true);
+          const { data } = await axios.get(`${API}/embeddedsigning`, {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true
+          });
+          if (data?.signingURL) {
+            setIframeUrl(data.signingURL);
+          } else {
+            toast.error("Failed to fetch NDA signing URL.");
+          }
+        } catch (err) {
+          console.error("Error fetching NDA URL", err);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchNdaSigningURL();
+  }, [step, token, iframeUrl]);
 
   const renderStep = () => {
     switch (step) {
@@ -210,6 +261,19 @@ const saveStepToBackend = async (sectionKey) => {
             onChange={(data) => handleChange('educationalCertificatesAndDegree', data)}
           />
         );
+      case 4: return (
+        <div className="mt-4">
+          <h4>🔐 NDA Signing - Powered by Zoho Sign</h4>
+          {iframeUrl ? (
+            <iframe src={iframeUrl} width="100%" height="700px" frameBorder="0" title="NDA Signing"></iframe>
+          ) : (
+            <div>Loading NDA document...</div>
+          )}
+          <div className="text-muted mt-3">
+            After completing the signing, you will be redirected automatically.
+          </div>
+        </div>
+        );
       default:
         return null;
     }
@@ -221,22 +285,19 @@ const saveStepToBackend = async (sectionKey) => {
         <div className="p-4 shadow bg-white rounded" style={{ maxWidth: '900px', margin: 'auto' }}>
           <h2 className="mb-4">Employee Onboarding</h2>
 
-          {submitted ? (
+                  {alreadySubmitted ? (
   <div className="text-center my-5">
-    {alreadySubmitted ? (
-      <>
-        <h3 className="text-success">✅ You have already submitted the form</h3>
-        <p>Thanks! We have received your onboarding details.</p>
-      </>
-    ) : (
-      <>
-        <h3 className="text-success">✅ Thank you for submitting the form!</h3>
-        <p>Your onboarding details have been saved. Our team will contact you shortly.</p>
-      </>
-    )}
+    <h3 className="text-success">✅ You have already submitted the form</h3>
+    <p>Thanks! We have received your onboarding details.</p>
   </div>
 ) : (
-            <>
+  <>
+    {/* Optional banner while NDA pending */}
+    {submitted && (
+      <div className="alert alert-info mb-3">
+        Your details are saved. Please complete the NDA to finish onboarding.
+      </div>
+    )}
               {/* Stepper */}
               <div className="d-flex justify-content-between align-items-center mb-4">
                 {steps.map((label, index) => (
@@ -255,49 +316,49 @@ const saveStepToBackend = async (sectionKey) => {
                 ))}
               </div>
 
-{loading && (
-  <div className="text-center mb-3">
-    <div className="spinner-border text-primary" role="status">
-      <span className="visually-hidden">Loading...</span>
-    </div>
-    <div className="text-muted mt-2">Uploading files. Please wait...</div>
-  </div>
-)}
+            {loading && (
+              <div className="text-center mb-3">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+                <div className="text-muted mt-2">Uploading files. Please wait...</div>
+              </div>
+            )}
 
               {renderStep()}
-
-              <div className="d-flex justify-content-between mt-4">
-                {step > 0 && (
-                  <button className="btn btn-outline-secondary" onClick={handlePrev}>
-                    ← Back
-                  </button>
-                )}
-                {step < steps.length - 1 && (
+              {step < steps.length - 2 && (
+                <div className="d-flex justify-content-between mt-4">
+                  {step > 0 && (
+                    <button className="btn btn-outline-secondary" onClick={() => setStep((prev) => prev - 1)}>
+                      ← Back
+                    </button>
+                  )}
                   <button className="btn btn-primary ms-auto" onClick={handleNext}>
                     Next →
                   </button>
-                )}
-                {step === steps.length - 1 && (
-  <button
-  className="btn btn-success ms-auto"
-  onClick={async () => {
-    if (!validateStep()) return;
-    try {
-      setLoading(true);
-      await saveStepToBackend("educationalCertificatesAndDegree");
-      setSubmitted(true);
-    } finally {
-      setLoading(false);
-    }
-  }}
-  disabled={loading}
->
-  {loading ? 'Submitting...' : 'Submit'}
-</button>
-
-)}
-
+                </div>
+              )}
+              {step === steps.length - 2 && (
+                <div className="d-flex justify-content-end mt-4">
+                  <button
+                    className="btn btn-success"
+                    onClick={async () => {
+                      if (!validateStep()) return;
+                      try {
+                        setLoading(true);
+                        await saveStepToBackend("educationalCertificatesAndDegree");
+                        setStep((prev) => prev + 1);
+                      } catch (err) {
+                        console.error('Submission failed', err);
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                  >
+                    Submit & Proceed to NDA →
+                  </button>
               </div>
+            )}
             </>
           )}
         </div>
