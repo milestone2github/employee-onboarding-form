@@ -34,6 +34,7 @@ const userId = searchParams.get('userId');
 //     }
 //   }, [token, navigate]);
 updateStatus();
+  // eslint-disable-next-line
   }, [token]);
 
   const handleBackHome = () => {
