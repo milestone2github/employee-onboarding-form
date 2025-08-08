@@ -25,40 +25,55 @@ const OnboardingForm = () => {
 
   const steps = ['Personal Details', 'Reference Details', 'Bank Details', 'Educational Certificates & Degree', 'NDA Signing'];
 
-  useEffect(() => {
-  if (token) {
-    axios
-      .get(`${API}/me`, {
+ useEffect(() => {
+  if (!token) return;
+
+  let cancelled = false;
+
+  const load = async () => {
+    try {
+      const { data } = await axios.get(`${API}/me`, {
         headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true
-      })
-      .then((res) => {
-        const saved = res.data || {};
-        const savedNdaInfo = saved.nda
-        // console.log("saved data:", saved)
-        setFormData({
-          personalDetails: saved.personalDetails || {},
-          referenceDetails: saved.referenceDetails || {},
-          bankDetails: saved.bankDetails || {},
-          educationalCertificatesAndDegree: saved.educationalCertificatesAndDegree || {},
-        });
+        withCredentials: true,
+      });
 
-        console.log("NDA Info:", savedNdaInfo );
+      if (cancelled) return;
 
-        //  Check if already submitted
-        if (savedNdaInfo.signed === true) {
-          setSubmitted(true);
-          setAlreadySubmitted(true); 
-        }
-        
-        // if (saved.submittedAt) {
-        //   setSubmitted(true);
-        //   setAlreadySubmitted(true); 
-        // }
-      })
-      .catch((err) => console.error('Failed to load onboarding data', err));
-  }
+      const saved = data || {};
+      const savedNdaInfo = saved?.nda || {};
+
+      setFormData({
+        personalDetails: saved.personalDetails || {},
+        referenceDetails: saved.referenceDetails || {},
+        bankDetails: saved.bankDetails || {},
+        educationalCertificatesAndDegree: saved.educationalCertificatesAndDegree || {},
+      });
+
+      // first 4 steps complete?
+      if (saved?.submittedAt) {
+        setSubmitted(true);
+      }
+
+      // NDA fully complete? (same condition you used earlier)
+      if (savedNdaInfo?.signed === true) {
+        setAlreadySubmitted(true);
+      }
+
+      // auto-jump to NDA if pages 1–4 done but NDA not signed
+      if (saved?.submittedAt && !savedNdaInfo?.signed) {
+        setStep(4);
+      }
+
+      console.log('NDA Info:', savedNdaInfo);
+    } catch (err) {
+      console.error('Failed to load onboarding data', err);
+    }
+  };
+
+  load();
+  return () => { cancelled = true; };
 }, [token]);
+
 
 
 const saveStepToBackend = async (sectionKey) => {
@@ -270,22 +285,19 @@ const saveStepToBackend = async (sectionKey) => {
         <div className="p-4 shadow bg-white rounded" style={{ maxWidth: '900px', margin: 'auto' }}>
           <h2 className="mb-4">Employee Onboarding</h2>
 
-                  {submitted ? (
-          <div className="text-center my-5">
-            {alreadySubmitted ? (
-              <>
-                <h3 className="text-success">✅ You have already submitted the form</h3>
-                <p>Thanks! We have received your onboarding details.</p>
-              </>
-            ) : (
-              <>
-                <h3 className="text-success">✅ Thank you for submitting the form!</h3>
-                <p>Your onboarding details have been saved. Our team will contact you shortly.</p>
-              </>
-            )}
-          </div>
-        ) : (
-            <>
+                  {alreadySubmitted ? (
+  <div className="text-center my-5">
+    <h3 className="text-success">✅ You have already submitted the form</h3>
+    <p>Thanks! We have received your onboarding details.</p>
+  </div>
+) : (
+  <>
+    {/* Optional banner while NDA pending */}
+    {submitted && (
+      <div className="alert alert-info mb-3">
+        Your details are saved. Please complete the NDA to finish onboarding.
+      </div>
+    )}
               {/* Stepper */}
               <div className="d-flex justify-content-between align-items-center mb-4">
                 {steps.map((label, index) => (
