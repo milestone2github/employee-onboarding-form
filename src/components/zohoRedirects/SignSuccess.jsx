@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 
 const SignSuccess = () => {
   const navigate = useNavigate();
@@ -8,9 +8,14 @@ const SignSuccess = () => {
   const [statusUpdated, setStatusUpdated] = useState(false);
 
   const [searchParams] = useSearchParams();
-const userId = searchParams.get('userId');
+  const userId = searchParams.get('userId');
+
+  const isValidObjectId = (id) => /^[a-f\d]{24}$/i.test(id);
+  const invalidUserId = !userId || !isValidObjectId(userId);
 
   useEffect(() => {
+    if (invalidUserId) return;
+
     const updateStatus = async () => {
       try {
         await axios.get(
@@ -18,10 +23,9 @@ const userId = searchParams.get('userId');
           {
             params: { status: 'success', userId },
             headers: { Authorization: `Bearer ${token}` },
-            withCredentials: true
+            withCredentials: true,
           }
         );
-        // localStorage.setItem('nda_completed', 'true');
         setStatusUpdated(true);
       } catch (err) {
         console.error('❌ Error reporting NDA success:', err);
@@ -29,19 +33,14 @@ const userId = searchParams.get('userId');
     };
 
     updateStatus();
-    // eslint-disable-next-line
-  }, [token]);
+  }, [token, userId, invalidUserId]);
 
-  //  if (localStorage.getItem('nda_completed') === 'true') {
-  //     navigate('/', { replace: true });
-  //   } else {
-  //     updateStatus();
-  //   }
-  // }, [token, navigate]);
+  // ✅ This happens after hooks — safe for conditional rendering
+  if (invalidUserId) {
+    return <Navigate to="/404" replace />;
+  }
 
-  const handleFinish = () => {
-    navigate('/', { replace: true });
-  };
+  const handleFinish = () => navigate('/', { replace: true });
 
   return (
     <div className="min-vh-100" style={{ backgroundColor: '#d4fcdc', paddingTop: '100px' }}>

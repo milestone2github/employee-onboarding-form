@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 
 const SignLater = () => {
   const navigate = useNavigate();
@@ -8,9 +8,13 @@ const SignLater = () => {
   const [statusUpdated, setStatusUpdated] = useState(false);
 
   const [searchParams] = useSearchParams();
-const userId = searchParams.get('userId');
+  const userId = searchParams.get('userId');
+
+  const isValidObjectId = (id) => /^[a-f\d]{24}$/i.test(id);
+  const invalidUserId = !userId || !isValidObjectId(userId);
 
   useEffect(() => {
+    if (invalidUserId) return;
     const updateStatus = async () => {
       try {
         await axios.get(
@@ -18,37 +22,27 @@ const userId = searchParams.get('userId');
           {
             params: { status: 'later', userId },
             headers: { Authorization: `Bearer ${token}` },
-            withCredentials: true
+            withCredentials: true,
           }
         );
-        // localStorage.setItem('nda_completed', 'true');
         setStatusUpdated(true);
       } catch (err) {
         console.error('❌ Error reporting NDA later:', err);
       }
     };
-//  if (localStorage.getItem('nda_completed') === 'true') {
-//       navigate('/', { replace: true });
-//     } else {
-//       updateStatus();
-//     }
-//   }, [token, navigate]);
-updateStatus();
-  // eslint-disable-next-line
-  }, [token]);
+    updateStatus();
+  }, [token, userId, invalidUserId]);
 
-  const handleBackHome = () => {
-    navigate('/');
-  };
+  if (invalidUserId) return <Navigate to="/404" replace />;
 
   return (
-    <div className="min-vh-100" style={{ backgroundColor: '#fff3cd', paddingTop: '100px' }}>
+    <div className="min-vh-100" style={{ backgroundColor: '#d4fcdc', paddingTop: '100px' }}>
       <div className="text-center">
-        <h2 className="text-warning">⏳ NDA Signing Deferred</h2>
-        <p>You chose to sign the NDA later. Please ensure to complete it soon.</p>
+        <h2 className="text-warning">⏳ You chose to sign the document later.</h2>
+        <p>You can return to complete the NDA anytime.</p>
         {statusUpdated ? (
-          <button className="btn btn-outline-warning mt-3" onClick={handleBackHome}>
-            Back to Home
+          <button className="btn btn-primary mt-3" onClick={() => navigate('/', { replace: true })}>
+            Finish
           </button>
         ) : (
           <p className="text-muted">Updating status, please wait...</p>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 
 const SignCompleted = () => {
   const navigate = useNavigate();
@@ -8,9 +8,13 @@ const SignCompleted = () => {
   const [statusUpdated, setStatusUpdated] = useState(false);
 
   const [searchParams] = useSearchParams();
-const userId = searchParams.get('userId');
+  const userId = searchParams.get('userId');
+
+  const isValidObjectId = (id) => /^[a-f\d]{24}$/i.test(id);
+  const invalidUserId = !userId || !isValidObjectId(userId);
 
   useEffect(() => {
+    if (invalidUserId) return;
     const updateStatus = async () => {
       try {
         await axios.get(
@@ -18,38 +22,26 @@ const userId = searchParams.get('userId');
           {
             params: { status: 'completed', userId },
             headers: { Authorization: `Bearer ${token}` },
-            withCredentials: true
+            withCredentials: true,
           }
         );
-        // localStorage.setItem('nda_completed', 'true');
         setStatusUpdated(true);
       } catch (err) {
         console.error('❌ Error reporting NDA completion:', err);
       }
     };
+    updateStatus();
+  }, [token, userId, invalidUserId]);
 
-     updateStatus();
-     // eslint-disable-next-line
-  }, [token]);
-
-// if (localStorage.getItem('nda_completed') === 'true') {
-//       navigate('/', { replace: true });
-//     } else {
-//       updateStatus();
-//     }
-//   }, [token, navigate]);
-
-  const handleFinish = () => {
-    navigate('/', { replace: true });
-  };
+  if (invalidUserId) return <Navigate to="/404" replace />;
 
   return (
     <div className="min-vh-100" style={{ backgroundColor: '#d4fcdc', paddingTop: '100px' }}>
       <div className="text-center">
-        <h2 className="text-success">✅ NDA Signing Completed</h2>
-        <p>Your NDA signing process is fully complete.</p>
+        <h2 className="text-success">🎉 Document signing completed!</h2>
+        <p>Thanks! Your NDA flow is complete.</p>
         {statusUpdated ? (
-          <button className="btn btn-primary mt-3" onClick={handleFinish}>
+          <button className="btn btn-primary mt-3" onClick={() => navigate('/', { replace: true })}>
             Finish
           </button>
         ) : (
