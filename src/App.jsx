@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import OtpVerify from './components/OtpVerify';
 import OnboardingForm from './components/OnboardingForm';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -11,6 +11,8 @@ import SignSuccess from './components/zohoRedirects/SignSuccess';
 import SignCompleted from './components/zohoRedirects/SignCompleted';
 import SignDeclined from './components/zohoRedirects/SignDeclined';
 import SignLater from './components/zohoRedirects/SignLater';
+
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
@@ -32,6 +34,10 @@ function App() {
           <Route path="/sign-completed" element={<SignCompleted />} />
           <Route path="/sign-declined" element={<SignDeclined />} />
           <Route path="/sign-later" element={<SignLater />} />
+
+          {/* 404 route + catch-all redirect */}
+          <Route path="/404" element={<NotFound />} />
+          <Route path="*" element={<Navigate to="/404" replace />} />
         </Routes>
       </Router>
 
