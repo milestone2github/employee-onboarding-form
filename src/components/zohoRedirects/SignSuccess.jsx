@@ -14,12 +14,28 @@ const SignSuccess = () => {
   const invalidUserId = !userId || !isValidObjectId(userId);
 
   useEffect(() => {
+    // 🔄 Replace current history entry (so Back won't go to onboarding)
+    window.history.replaceState(null, '', window.location.href);
+
+    // 🚫 Disable back navigation while on this page
+    window.history.pushState(null, '', window.location.href);
+    const blockBack = () => {
+      window.history.go(1);
+    };
+    window.addEventListener('popstate', blockBack);
+
+    return () => {
+      window.removeEventListener('popstate', blockBack);
+    };
+  }, []);
+
+  useEffect(() => {
     if (invalidUserId) return;
 
     const updateStatus = async () => {
       try {
         await axios.get(
-          `${process.env.REACT_APP_NDA_API_HOST}/api/onboarding/ndaSignStatus`,
+          `${process.env.REACT_APP_API_URL}/api/onboarding/ndaSignStatus`,
           {
             params: { status: 'success', userId },
             headers: { Authorization: `Bearer ${token}` },
@@ -40,7 +56,16 @@ const SignSuccess = () => {
     return <Navigate to="/404" replace />;
   }
 
-  const handleFinish = () => navigate('/', { replace: true });
+  const handleFinish = () => {
+    if (window.top !== window.self) {
+      // ✅ Break out of iframe
+      window.top.location.href = '/';
+      // window.top.location.href = 'http://localhost:3000/';
+    } else {
+      // Normal navigation if not in iframe
+      navigate('/', { replace: true });
+    }
+  };
 
   return (
     <div className="min-vh-100" style={{ backgroundColor: '#d4fcdc', paddingTop: '100px' }}>

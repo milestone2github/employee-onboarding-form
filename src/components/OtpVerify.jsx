@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -13,6 +13,22 @@ const OtpVerify = () => {
   const [otpLoading, setOtpLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // 🔄 Replace current history entry (so Back won't go to onboarding)
+    window.history.replaceState(null, '', window.location.href);
+
+    // 🚫 Disable back navigation while on this page
+    window.history.pushState(null, '', window.location.href);
+    const blockBack = () => {
+      window.history.go(1);
+    };
+    window.addEventListener('popstate', blockBack);
+
+    return () => {
+      window.removeEventListener('popstate', blockBack);
+    };
+  }, []);
 
   const sendOTP = async () => {
   setOtpLoading(true); 
