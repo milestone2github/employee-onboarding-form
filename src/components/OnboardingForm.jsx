@@ -325,7 +325,7 @@ const saveStepToBackend = async (sectionKey) => {
             )}
 
               {renderStep()}
-              {step < steps.length - 2 && (
+              {/* {step < steps.length - 2 && (
                 <div className="d-flex justify-content-between mt-4">
                   {step > 0 && (
                     <button className="btn btn-outline-secondary" onClick={() => setStep((prev) => prev - 1)}>
@@ -336,9 +336,31 @@ const saveStepToBackend = async (sectionKey) => {
                     Next →
                   </button>
                 </div>
-              )}
-              {step === steps.length - 2 && (
-                <div className="d-flex justify-content-end mt-4">
+              )} */}
+                <div className="d-flex justify-content-between mt-4">
+                  {/* Back button visible until step < steps.length - 1 */}
+                  {step > 0 && step < steps.length - 1 && (
+                    <button
+                      className="btn btn-outline-secondary"
+                      onClick={() => setStep((prev) => prev - 1)}
+                    >
+                      ← Back
+                    </button>
+                  )}
+
+                  {/* Next button visible until step < steps.length - 2 */}
+                  {step < steps.length - 2 && (
+                    <button
+                      className="btn btn-primary ms-auto"
+                      onClick={handleNext}
+                    >
+                      Next →
+                    </button>
+                  )}
+                </div>
+
+                {step === steps.length - 2 && (
+                  <div className="d-flex justify-content-end mt-4">
                   <button
                     className="btn btn-success"
                     onClick={async () => {
